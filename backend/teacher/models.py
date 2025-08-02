@@ -14,7 +14,7 @@ class TeacherModel(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"FullName: {self.full_name} || phone number: {self.phone_number} || status: {self.status}"
+        return self.phone_number
     
     class Meta:
         verbose_name = "Teacher"
