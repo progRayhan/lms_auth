@@ -7,6 +7,7 @@ from .models import TeacherModel
 from django.contrib.auth.hashers import make_password, check_password
 from .serializers import TeacherRegistrationSerializer
 from _applib.model_choice_fields import TeacherStatus
+from _applib.utils import get_token
 
 
 class TeacherRegistrationView(APIView):
@@ -109,3 +110,66 @@ class TeacherApproveView(APIView):
             return Response(data)
 
 
+class LoginView(APIView):
+    def post(self, request):
+        # user agent 
+        hit_client = request.META.get('HTTP_USER_AGENT', '')
+        if hit_client[:7] == "Postman":
+            return Response(
+                {
+                    "status_code": "400",
+                    "msg": "Postman does not allow in our system !",
+                    "token": None
+                }
+            )
+        # 
+        phone = request.data.get("phone_number")
+        raw_password = request.data.get("raw_password")
+
+        teacher = TeacherModel.objects.filter(phone_number=phone).first()
+        if teacher is None:
+            return Response(
+                {
+                    "status_code": "400",
+                    "msg": "Teacher doesn't found !",
+                    "token": None
+                }
+            )
+        teacher_pass = teacher.password
+
+        if raw_password == teacher_pass:
+            payload = {
+                "phone": teacher.phone_number,
+                "full_name": teacher.full_name,
+                "gender": teacher.gender,
+                "status": teacher.status,
+                "custom": "this is custom"
+            }
+
+            secret = "lms_secret@329"
+
+            algorithm = "HS256"
+
+            access_token = get_token(payload, secret, algorithm)
+
+            return Response(
+                {
+                    "status_code": "200",
+                    "msg": "Login Success",
+                    "token": access_token
+                }
+            )
+        else:
+            return Response(
+                {
+                    "status_code": "400",
+                    "msg": "Login Failed",
+                    "token": None
+                }
+            )
+
+
+
+# def my_view(request):
+#     user_agent = request.META.get('HTTP_USER_AGENT', '')
+#     return HttpResponse(f"Your browser: {user_agent}")
